@@ -63,11 +63,20 @@
     Log in with LINE
   </button>
 
+  <div style="margin-top: 20px;">
+  <button id="profileButton" type="button" disabled>
+    Test LINE Profile
+  </button>
+  <p id="profileStatus">Profile not tested.</p>
+  </div>
+
   <script>
     const LIFF_ID = '2012254902-rJe96Xlf';
 
     const statusElement = document.getElementById('status');
     const loginButton = document.getElementById('loginButton');
+    const profileButton = document.getElementById('profileButton');
+    const profileStatus = document.getElementById('profileStatus');
 
     let liffReady = false;
 
@@ -93,6 +102,7 @@
         : 'Log in with LINE';
 
       loginButton.disabled = false;
+      profileButton.disabled = !liff.isLoggedIn();
     }
 
     async function initializeLiff() {
@@ -151,6 +161,37 @@
       }
     }
 
+    async function testLineProfile() {
+      profileButton.disabled = true;
+      profileStatus.textContent = 'Loading LINE profile...';
+
+    try {
+      if (!liff.isLoggedIn()) {
+        throw new Error('Please log in with LINE first.');
+      }
+
+      const profile = await liff.getProfile();
+
+      profileStatus.textContent =
+        'Profile loaded successfully.' +
+        '\nDisplay name: ' + profile.displayName +
+        '\nPicture available: ' + Boolean(profile.pictureUrl) +
+        '\nUser ID available: ' + Boolean(profile.userId);
+
+    } catch (error) {
+      console.error('LINE profile test failed:', error);
+
+      profileStatus.textContent =
+        'Profile test failed: ' +
+        (error && error.message ? error.message : String(error));
+
+    } finally {
+    profileButton.disabled = !liff.isLoggedIn();
+    }
+  }
+
+    profileButton.addEventListener('click', testLineProfile);
+    
     loginButton.addEventListener('click', loginWithLine);
 
     const sdkScript = document.createElement('script');
