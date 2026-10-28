@@ -1,12 +1,85 @@
+
 <!DOCTYPE html>
-<html lang="th">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Car Booking System</title>
+
+  <script src="https://static.line-scdn.net/liff/edge/versions/2.22.2/sdk.js"></script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: 40px auto;
+      padding: 20px;
+      color: #333;
+    }
+
+    h1 { font-size: 24px; }
+    p { line-height: 1.6; overflow-wrap: anywhere; }
+
+    button {
+      padding: 10px 16px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+  </style>
 </head>
 <body>
-  <h1>Company Vehicle Booking</h1>
-  <p>GitHub Pages is working.</p>
+  <h1>Car Booking System</h1>
+  <p>Company Vehicle Booking</p>
+  <p id="status">Initializing LIFF...</p>
+  <button id="loginButton" onclick="loginWithLine()" disabled>
+    Log in with LINE
+  </button>
+
+  <script>
+    const LIFF_ID = '2012254902-rJe96Xlf';
+    let liffReady = false;
+
+    async function initializeLiff() {
+      const status = document.getElementById('status');
+      const button = document.getElementById('loginButton');
+
+      try {
+        await liff.init({ liffId: LIFF_ID });
+        liffReady = true;
+        button.disabled = false;
+
+        const context = liff.getContext();
+
+        status.textContent =
+          'LIFF initialized.' +
+          ' | inClient: ' + liff.isInClient() +
+          ' | context: ' + (context ? context.type : 'unknown') +
+          ' | loggedIn: ' + liff.isLoggedIn() +
+          ' | SDK: ' + liff.getVersion() +
+          ' | Host: ' + window.location.hostname +
+          ' | Path: ' + window.location.pathname;
+      } catch (error) {
+        console.error('LIFF initialization failed:', error);
+        status.textContent =
+          'LIFF initialization failed: ' +
+          (error && error.message ? error.message : String(error));
+      }
+    }
+
+    function loginWithLine() {
+      if (!liffReady) return;
+
+      if (!liff.isLoggedIn()) {
+        liff.login({
+          redirectUri: window.location.href
+        });
+      } else {
+        document.getElementById('status').textContent =
+          'Already logged in with LINE.';
+      }
+    }
+
+    initializeLiff();
+  </script>
 </body>
 </html>
