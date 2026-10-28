@@ -1,91 +1,173 @@
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="th">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#06C755">
+
   <title>Car Booking System</title>
 
-  <script src="https://static.line-scdn.net/liff/edge/versions/2.22.2/sdk.js"></script>
-
   <style>
+    * {
+      box-sizing: border-box;
+    }
+
     body {
       font-family: Arial, sans-serif;
       max-width: 600px;
       margin: 40px auto;
       padding: 20px;
       color: #333;
+      line-height: 1.6;
     }
 
-    h1 { font-size: 24px; }
-    p { line-height: 1.6; overflow-wrap: anywhere; }
+    h1 {
+      font-size: 24px;
+    }
+
+    #status {
+      padding: 12px;
+      background: #f3f5f5;
+      border-radius: 8px;
+      overflow-wrap: anywhere;
+      white-space: pre-wrap;
+    }
 
     button {
-      padding: 10px 16px;
+      padding: 12px 18px;
+      border: none;
+      border-radius: 8px;
+      background: #06C755;
+      color: white;
       font-size: 16px;
       cursor: pointer;
     }
+
+    button:disabled {
+      background: #999;
+      cursor: not-allowed;
+    }
   </style>
 </head>
+
 <body>
   <h1>Car Booking System</h1>
   <p>Company Vehicle Booking</p>
-  <p id="status">Initializing LIFF...</p>
-  <button id="loginButton" onclick="loginWithLine()" disabled>
+
+  <p id="status" role="status" aria-live="polite">
+    Loading LIFF SDK...
+  </p>
+
+  <button id="loginButton" type="button" disabled>
     Log in with LINE
   </button>
 
   <script>
     const LIFF_ID = '2012254902-rJe96Xlf';
+
+    const statusElement = document.getElementById('status');
+    const loginButton = document.getElementById('loginButton');
+
     let liffReady = false;
 
+    function showError(message) {
+      statusElement.textContent = 'ERROR: ' + message;
+      console.error(message);
+    }
+
+    function showLiffStatus() {
+      const context = liff.getContext();
+
+      statusElement.textContent =
+        'LIFF initialized successfully.' +
+        '\ninClient: ' + liff.isInClient() +
+        '\ncontext: ' + (context ? context.type : 'unknown') +
+        '\nloggedIn: ' + liff.isLoggedIn() +
+        '\nSDK: ' + liff.getVersion() +
+        '\nHost: ' + window.location.hostname +
+        '\nPath: ' + window.location.pathname;
+
+      loginButton.textContent = liff.isLoggedIn()
+        ? 'Already logged in with LINE'
+        : 'Log in with LINE';
+
+      loginButton.disabled = false;
+    }
+
     async function initializeLiff() {
-      const status = document.getElementById('status');
-      const button = document.getElementById('loginButton');
+      statusElement.textContent = 'Loading LIFF SDK...';
+
+      if (typeof window.liff === 'undefined') {
+        showError(
+          'LIFF SDK was not loaded. Check your internet connection ' +
+          'or whether the LINE SDK CDN is blocked.'
+        );
+        return;
+      }
+
+      statusElement.textContent = 'Initializing LIFF...';
 
       try {
-        await liff.init({ liffId: LIFF_ID });
+        await liff.init({
+          liffId: LIFF_ID
+        });
+
         liffReady = true;
-        button.disabled = false;
+        showLiffStatus();
 
-        const context = liff.getContext();
-
-        status.textContent =
-          'LIFF initialized.' +
-          ' | inClient: ' + liff.isInClient() +
-          ' | context: ' + (context ? context.type : 'unknown') +
-          ' | loggedIn: ' + liff.isLoggedIn() +
-          ' | SDK: ' + liff.getVersion() +
-          ' | Host: ' + window.location.hostname +
-          ' | Path: ' + window.location.pathname;
       } catch (error) {
         console.error('LIFF initialization failed:', error);
-        status.textContent =
-          'LIFF initialization failed: ' +
-          (error && error.message ? error.message : String(error));
+
+        showError(
+          (error && error.message)
+            ? error.message
+            : String(error)
+        );
       }
     }
 
-    function loginWithLine() {
-      if (!liffReady) return;
+    async function loginWithLine() {
+      if (!liffReady) {
+        showError('LIFF is not ready yet. Please reload the page.');
+        return;
+      }
 
-      if (!liff.isLoggedIn()) {
+      if (liff.isLoggedIn()) {
+        showLiffStatus();
+        return;
+      }
+
+      try {
         liff.login({
           redirectUri: window.location.href
         });
-      } else {
-      const context = liff.getContext();
-
-      document.getElementById('status').textContent =
-        'LIFF initialized.' +
-        ' | inClient: ' + liff.isInClient() +
-        ' | context: ' + (context ? context.type : 'unknown') +
-        ' | loggedIn: ' + liff.isLoggedIn() +
-        ' | userId available: ' + Boolean(liff.getDecodedIDToken()) +
-        ' | SDK: ' + liff.getVersion();
+      } catch (error) {
+        showError(
+          (error && error.message)
+            ? error.message
+            : String(error)
+        );
       }
+    }
 
-    initializeLiff();
+    loginButton.addEventListener('click', loginWithLine);
+
+    const sdkScript = document.createElement('script');
+
+    sdkScript.src =
+      'https://static.line-scdn.net/liff/edge/versions/2.31.2/sdk.js';
+
+    sdkScript.onload = initializeLiff;
+
+    sdkScript.onerror = function () {
+      showError(
+        'Failed to download LIFF SDK version 2.31.2. ' +
+        'Check network access to static.line-scdn.net.'
+      );
+    };
+
+    document.head.appendChild(sdkScript);
   </script>
 </body>
 </html>
