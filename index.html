@@ -74,6 +74,9 @@
     <button id="employeeProfileButton" type="button">
       Test Employee Profile
     </button>
+    <button id="adminAccessButton" type="button">
+      Test Admin Access
+    </button>
     <button id="identityButton" type="button" disabled>
       Test LINE ID Token
     </button>
@@ -90,6 +93,7 @@
     const identityButton = document.getElementById('identityButton');
     const identityStatus = document.getElementById('identityStatus');
     const employeeProfileButton = document.getElementById('employeeProfileButton');
+    const adminAccessButton = document.getElementById('adminAccessButton');
     
     let liffReady = false;
 
@@ -262,21 +266,21 @@
     }
 
     async function testMyProfile() {
-  identityButton.disabled = true;
-  identityStatus.textContent = 'Loading employee profile...';
+      identityButton.disabled = true;
+      identityStatus.textContent = 'Loading employee profile...';
 
-  try {
-    if (!liffReady || !liff.isLoggedIn()) {
-      throw new Error('Please log in with LINE first.');
-    }
+    try {
+      if (!liffReady || !liff.isLoggedIn()) {
+        throw new Error('Please log in with LINE first.');
+      }
 
     const idToken = liff.getIDToken();
 
-    if (!idToken) {
-      throw new Error(
+      if (!idToken) {
+        throw new Error(
         'No LINE ID Token available. Please log in again.'
       );
-    }
+      }
 
     const response = await fetch(
       'https://car-booking-api.akanee-so.workers.dev/',
@@ -320,6 +324,58 @@
     identityButton.disabled = !liffReady || !liff.isLoggedIn();
   }
 }    
+async function testAdminAccess() {
+  adminAccessButton.disabled = true;
+  identityStatus.textContent = 'Checking administrator access...';
+
+  try {
+    if (!liffReady || !liff.isLoggedIn()) {
+      throw new Error('Please log in with LINE first.');
+    }
+
+    const idToken = liff.getIDToken();
+
+    if (!idToken) {
+      throw new Error('No LINE ID Token available. Please log in again.');
+    }
+
+    const response = await fetch(
+      'https://car-booking-api.akanee-so.workers.dev/',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          action: 'testAdminAccess',
+          idToken: idToken
+        })
+      }
+    );
+
+    const result = await response.json();
+
+    if (!response.ok || result.ok !== true) {
+      throw new Error(result.message || 'Administrator access denied.');
+    }
+
+    identityStatus.textContent =
+      'Administrator access verified successfully.';
+
+  } catch (error) {
+    console.error('Admin access test failed:', error);
+
+    identityStatus.textContent =
+      'Admin access test failed: ' +
+      (error && error.message ? error.message : String(error));
+
+  } finally {
+    adminAccessButton.disabled = !liffReady || !liff.isLoggedIn();
+  }
+}
+
+    adminAccessButton.addEventListener('click', testAdminAccess);
+    
     identityButton.addEventListener('click', testLineIdentity);
 
     employeeProfileButton.addEventListener('click', testMyProfile);
