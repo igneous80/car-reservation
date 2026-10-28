@@ -74,10 +74,16 @@
           redirectUri: window.location.href
         });
       } else {
-        document.getElementById('status').textContent =
-          'Already logged in with LINE.';
+      const context = liff.getContext();
+
+      document.getElementById('status').textContent =
+        'LIFF initialized.' +
+        ' | inClient: ' + liff.isInClient() +
+        ' | context: ' + (context ? context.type : 'unknown') +
+        ' | loggedIn: ' + liff.isLoggedIn() +
+        ' | userId available: ' + Boolean(liff.getDecodedIDToken()) +
+        ' | SDK: ' + liff.getVersion();
       }
-    }
 
     initializeLiff();
   </script>
