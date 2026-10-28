@@ -64,10 +64,17 @@
   </button>
 
   <div style="margin-top: 20px;">
-  <button id="profileButton" type="button" disabled>
-    Test LINE Profile
-  </button>
-  <p id="profileStatus">Profile not tested.</p>
+    <button id="profileButton" type="button" disabled>
+      Test LINE Profile
+    </button>
+    <p id="profileStatus">Profile not tested.</p>
+  </div>
+
+  <div style="margin-top: 20px;">
+    <button id="identityButton" type="button" disabled>
+      Test LINE ID Token
+    </button>
+    <p id="identityStatus">Identity not tested.</p>
   </div>
 
   <script>
@@ -77,6 +84,8 @@
     const loginButton = document.getElementById('loginButton');
     const profileButton = document.getElementById('profileButton');
     const profileStatus = document.getElementById('profileStatus');
+    const identityButton = document.getElementById('identityButton');
+    const identityStatus = document.getElementById('identityStatus');
 
     let liffReady = false;
 
@@ -103,6 +112,7 @@
 
       loginButton.disabled = false;
       profileButton.disabled = !liff.isLoggedIn();
+      identityButton.disabled = !liff.isLoggedIn();
     }
 
     async function initializeLiff() {
@@ -190,6 +200,65 @@
     }
   }
 
+    
+    async function testLineIdentity() {
+      identityButton.disabled = true;
+      identityStatus.textContent = 'Verifying LINE identity...';
+
+      try {
+        if (!liffReady || !liff.isLoggedIn()) {
+          throw new Error('Please log in with LINE first.');
+        }
+
+        const idToken = liff.getIDToken();
+
+        if (!idToken) {
+          throw new Error(
+            'No LINE ID Token available. Please log in again.'
+          );
+        }
+
+        const response = await fetch(
+          'https://car-booking-api.akanee-so.workers.dev/',
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              action: 'testIdentity',
+              idToken: idToken
+            })
+          }
+        );
+
+        const result = await response.json();
+
+        if (!response.ok || result.ok !== true) {
+          throw new Error(
+            result.message || 'LINE identity verification failed.'
+          );
+        }
+
+        identityStatus.textContent =
+          'LINE ID Token verified successfully.';
+
+      } catch (error) {
+        console.error('LINE identity test failed:', error);
+
+        identityStatus.textContent =
+          'Identity test failed: ' +
+          (error && error.message
+            ? error.message
+            : String(error));
+
+      } finally {
+        identityButton.disabled = !liffReady || !liff.isLoggedIn();
+      }
+    }
+
+    identityButton.addEventListener('click', testLineIdentity);
+    
     profileButton.addEventListener('click', testLineProfile);
     
     loginButton.addEventListener('click', loginWithLine);
